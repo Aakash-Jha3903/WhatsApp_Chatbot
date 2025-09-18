@@ -20,7 +20,7 @@ This bot receives messages from WhatsApp via Twilio, generates responses using G
 <img src="demo_image.jpg" alt="output image" width="400"/>
 
 
-## Technologies Used : Python + Django REST framework + Twilio + Gemini + Ngrok + SQL
+## 🛠️ Technologies Used : Python + Django REST framework + Twilio + Gemini + Ngrok + SQL
 
 ---
 ## 📂 Project Structure
@@ -82,14 +82,14 @@ python manage.py createsuperuser   # for admin access
 python manage.py runserver 8000
 ```
 
-# 4 NGROK 
+# 4. NGROK🌨️
 ## In another terminal, run the ngrok tunnel:
 ```bash
 ngrok http http://localhost:8000
 ``` 
 --- 
 # 5. Configure Twilio Sandbox
-
+```bash
 In Twilio Console → Messaging → WhatsApp Sandbox Settings:
 
 When a message comes in →
@@ -99,6 +99,7 @@ Status callback URL →
 https://<ngrok-subdomain>.ngrok-free.app/whatsapp_chat/status (GET)
 
 scan the QR code of Twilio OR join the sandbox from your phone if not already (send the join <code> to the sandbox number).
+```
 ---
 ## 🛡️ Notes
 * All endpoints are open (AllowAny) for dev. Add authentication before production.
