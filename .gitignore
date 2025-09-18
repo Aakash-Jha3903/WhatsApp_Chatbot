@@ -6,4 +6,4 @@ venv/
 whatsapp_wsfu/
 *.sqlite3
 *.log
-vscode/
+.vscode/
