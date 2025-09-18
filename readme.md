@@ -100,12 +100,6 @@ https://<ngrok-subdomain>.ngrok-free.app/whatsapp_chat/status (GET)
 
 scan the QR code of Twilio OR join the sandbox from your phone if not already (send the join <code> to the sandbox number).
 ---
-## 📊 Analytics Ideas (future)
-* Add daily/weekly charts in Django Admin
-* Tag messages by brand/customer for multi-tenant support
-* Migrate DB to Postgres for production
-* Deploy on Render/Heroku/AWS with a permanent webhook URL
----
 ## 🛡️ Notes
 * All endpoints are open (AllowAny) for dev. Add authentication before production.
 * ngrok free URLs expire each run → use a reserved domain or deploy on a server.
