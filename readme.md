@@ -82,13 +82,12 @@ python manage.py createsuperuser   # for admin access
 python manage.py runserver 8000
 ```
 
-In another terminal, run the ngrok tunnel:
+# 4 NGROK 
+## In another terminal, run the ngrok tunnel:
 ```bash
 ngrok http http://localhost:8000
 ``` 
-
 --- 
-
 # 5. Configure Twilio Sandbox
 
 In Twilio Console → Messaging → WhatsApp Sandbox Settings:
@@ -100,31 +99,23 @@ Status callback URL →
 https://<ngrok-subdomain>.ngrok-free.app/whatsapp_chat/status (GET)
 
 scan the QR code of Twilio OR join the sandbox from your phone if not already (send the join <code> to the sandbox number).
-
 ---
-
 ## 📊 Analytics Ideas (future)
 * Add daily/weekly charts in Django Admin
 * Tag messages by brand/customer for multi-tenant support
 * Migrate DB to Postgres for production
 * Deploy on Render/Heroku/AWS with a permanent webhook URL
-
+---
 ## 🛡️ Notes
-
 * All endpoints are open (AllowAny) for dev. Add authentication before production.
 * ngrok free URLs expire each run → use a reserved domain or deploy on a server.
 * ALTS creds ignored warning from Gemini lib is harmless. Silence with:
 ```bash
 $env:GLOG_minloglevel="2"; $env:GRPC_VERBOSITY="ERROR"
 ```
-
 ---
-
-
 ## 🙏🏻 Thank You
 * ⭐ Star this repo   
 * 📢 Share on your socials!  
 * ✍️ Contributions & suggestions welcome!
-
-
 ---
