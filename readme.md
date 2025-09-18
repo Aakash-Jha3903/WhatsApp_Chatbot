@@ -16,7 +16,8 @@ This bot receives messages from WhatsApp via Twilio, generates responses using G
 
 ---
 # 🚀 Output Image 
-![output image](demo_image.jpg) 
+<!-- ![output image](demo_image.jpg)  -->
+<img src="demo_image.jpg" alt="output image" width="400"/>
 
 
 ## Technologies Used : Python + Django REST framework + Twilio + Gemini + Ngrok + SQL
