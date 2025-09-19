@@ -1,0 +1,28 @@
+# create a  .env and then add the following contents
+# then replace the placeholders with your actual values
+
+DJANGO_SECRET_KEY = 'your-django-secret-key'
+
+TWILIO_ACCOUNT_SID=ACXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+TWILIO_AUTH_TOKEN=your_auth_token
+WHATSAPP_FROM=whatsapp:+14100000 ( your Twilio WhatsApp number )
+
+GEMINI_API_KEY=your_gemini_api_key
+# Optional tuning:
+# GEMINI_MODEL=gemini-1.5-pro
+# GEMINI_TEMPERATURE=0.2
+# GEMINI_MAX_TOKENS=512
+
+# NKROK
+# region: us
+# version: '2'
+# authtoken: your_ngrok_authtoken
+GLOG_minloglevel=2
+GRPC_VERBOSITY=ERROR
+
+------------------------------------------------------------------------------------
+Install NGROK : https://www.youtube.com/watch?v=aFwrNSfthxU
+Twilio setup : https://www.youtube.com/watch?v=UVez2UyjpFk
+Gemini API key : https://aistudio.google.com/apikey
+
+NGROK Links in Twilio : https://www.youtube.com/watch?v=dsJgse8gc2o
