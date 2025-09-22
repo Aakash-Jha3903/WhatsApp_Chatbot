@@ -1,4 +1,3 @@
-# whatsapp_chat/views.py
 import csv
 import json
 import os
@@ -21,6 +20,7 @@ from twilio.rest import Client
 from .models import ChatMessage
 from .serializers import ChatMessageSerializer
 from .gemini_client import ask_gemini, MODEL_NAME, TEMPERATURE
+
 
 
 class ChatMessageListView(generics.ListAPIView):
@@ -83,10 +83,11 @@ class ChatMessageCSVExport(APIView):
                 m.latency_ms, m.delivery_status or "",
                 m.message_sid or "", m.outbound_message_sid or "",
             ])
-        # save the .csv file in the server (optional)
+
+        # optional: also save the CSV on disk (dev convenience)
         save_path = os.path.join(settings.BASE_DIR, "chatmessages.csv")
         with open(save_path, "w", newline="", encoding="utf-8") as f:
-            f.write(resp.content.decode("utf-8"))                
+            f.write(resp.content.decode("utf-8"))
 
         return resp
 
@@ -167,7 +168,7 @@ class WhatsAppWebhookView(APIView):
             cm.delivery_error_message = f"{type(e).__name__}: {e}"
             cm.save(update_fields=["delivery_status", "delivery_error_message"])
 
-        # 4) Return minimal TwiML so Twilio knows webhook succeeded
+        # 4) Minimal TwiML response
         return Response("<Response/>", content_type="application/xml")
 
 
@@ -194,7 +195,7 @@ class StatusCallbackView(APIView):
         cm = None
         if outbound_sid:
             cm = ChatMessage.objects.filter(outbound_message_sid=outbound_sid).first()
-        if not cm:  # fallback heuristic by conversation
+        if not cm:  # fallback by conversation
             cm = (ChatMessage.objects
                   .filter(from_phone=from_phone, to_phone=to_phone)
                   .order_by("-created_at")
@@ -207,3 +208,246 @@ class StatusCallbackView(APIView):
             cm.save(update_fields=["delivery_status", "delivery_error_code", "delivery_error_message"])
 
         return Response("OK")
+
+
+# ---------- ad-hoc senders (image/pdf by URL) ----------
+class SendImageView(APIView):
+    """
+    POST /send_image
+    JSON: 
+    {   
+        "to": "whatsapp:+91XXXXXXXXXX",
+        "image_url": "https://images.pexels.com/photos/40185/mac-freelancer-macintosh-macbook-40185.jpeg?cs=srgb&dl=pexels-pixabay-40185.jpg&fm=jpg",
+        "caption": "Here you go!" 
+    }
+    """
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        to = request.data.get("to", "")
+        image_url = request.data.get("image_url", "")
+        caption = request.data.get("caption", "")
+
+        if not (to.startswith("whatsapp:+") and image_url.startswith("https://")):
+            return Response({"ok": False, "error": "Provide to=whatsapp:+<number> and a public https image_url"}, status=400)
+
+        client = Client(settings.TWILIO_ACCOUNT_SID, settings.TWILIO_AUTH_TOKEN)
+        status_cb = request.build_absolute_uri("/status")
+
+        msg = client.messages.create(
+            from_=settings.WHATSAPP_FROM,
+            to=to,
+            body=caption or None,
+            media_url=[image_url],
+            status_callback=status_cb,
+        )
+        return Response({"ok": True, "sid": msg.sid})
+
+
+class SendPDFView(APIView):
+    """
+    POST /send_pdf
+    JSON: 
+    {
+      "to": "whatsapp:+91XXXXXXXXXX",
+      "pdf_url": "https://pdfobject.com/pdf/sample.pdf",
+      "caption": "Monthly report"
+    }
+    """
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        to = request.data.get("to", "")
+        pdf_url = request.data.get("pdf_url", "")
+        caption = request.data.get("caption", "")
+
+        if not (to.startswith("whatsapp:+") and pdf_url.startswith("https://") and pdf_url.lower().endswith(".pdf")):
+            return Response(
+                {"ok": False, "error": "Provide to=whatsapp:+<number> and a public https PDF url ending with .pdf"},
+                status=400,
+            )
+
+        client = Client(settings.TWILIO_ACCOUNT_SID, settings.TWILIO_AUTH_TOKEN)
+        status_cb = request.build_absolute_uri("/status")
+
+        msg = client.messages.create(
+            from_=settings.WHATSAPP_FROM,
+            to=to,
+            body=caption or None,
+            media_url=[pdf_url],
+            status_callback=status_cb,
+        )
+        return Response({"ok": True, "sid": msg.sid})
+
+import re
+import pdfkit
+# map only the emojis you use (add more as needed)
+TWMAP = {
+    "🛍️": "1f6cd",            # shopping bags
+    "📈": "1f4c8",
+    "🚀": "1f680",
+    "⏱️": "23f1",
+    "⚖️": "2696",
+    "📊": "1f4ca",
+    "👥": "1f465",
+    "🛒": "1f6d2",
+    "🆕": "1f195",
+    "🔁": "1f501",
+    "❌": "274c",
+    "👤": "1f464",
+    "💰": "1f4b0",
+    "📦": "1f4e6",
+    "🚶": "1f6b6",
+    "♻️": "267b",
+    "🔒": "1f512",
+    "✨": "2728",
+    # complex ZWJ/skin-tone sequence used in your header:
+    "🧑🏻‍💻": "1f9d1-1f3fb-200d-1f4bb",
+}
+
+_TW_BASE = "https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg"
+
+# compile regex of the keys for fast replacement
+_EMOJI_RE = re.compile("|".join(map(re.escape, sorted(TWMAP, key=len, reverse=True))))
+
+def _emoji_to_img(m):
+    cp = TWMAP[m.group(0)]
+    return (
+        f'<img src="{_TW_BASE}/{cp}.svg" '
+        f'width="40" height="20" '
+        f'style="vertical-align:-2px; margin-right:6px;" '
+        f'loading="lazy" alt="">'
+    )
+
+def _twemoji(html: str) -> str:
+    return _EMOJI_RE.sub(_emoji_to_img, html)
+
+class ConvertHtml2PDF(APIView):
+    """
+    POST /whatsapp_chat/generate_report_pdf
+    Generates a PDF from email_content and saves it under media/reports/
+    """
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        from .one1 import email_content  # your HTML in py string variable (email_content="html content...")
+
+        reports_dir = os.path.join(settings.MEDIA_ROOT, "reports")
+        os.makedirs(reports_dir, exist_ok=True)
+
+        ts = datetime.now().strftime("%Y-%m-%d__%H-%M-%S")
+        file_name = f"daily_report_{ts}.pdf"
+        pdf_path = os.path.join(reports_dir, file_name)
+
+        # 1) Replace emojis with Twemoji SVG <img> tags
+        html_with_twemoji = _twemoji(email_content)
+
+        # # 2) Wrap and style (keep your fonts; emojis are images now)
+        full_html = f"""<!doctype html>
+                        <html>
+                        <head>
+                          <meta charset="utf-8">
+                          <style>
+                            body {{ font-family: Arial, sans-serif; }}
+                            table {{ border-collapse: collapse; }}
+                          </style>
+                        </head>
+                        <body>
+                        {html_with_twemoji}
+                        </body>
+                        </html>
+                    """
+        
+        ## Alternative: if we want to remove all borders from tables ::::
+        # full_html = f"""<!doctype html>
+        #                 <html>
+        #                 <head>
+        #                   <meta charset="utf-8">
+        #                   <style>
+        #                     /* Emoji already handled; now kill borders coming from inline styles */
+        #                     html, body {{ font-family: Arial, sans-serif; }}
+        #                     table {{ border-collapse: separate; border-spacing: 0; }}
+        #                     table, tr, td, th {{ border: 0 !important; }}
+        #                     tr {{ border-bottom: 0 !important; }}
+        #                     td {{ border-top: 0 !important; }}
+        #                     /* optional: subtle divider instead of borders
+        #                     tr + tr td {{ 
+        #                       background: linear-gradient(to bottom, rgba(0,0,0,.08), rgba(0,0,0,.08)) 
+        #                                   left bottom/100% 1px no-repeat; 
+        #                     }} */
+        #                   </style>
+        #                 </head>
+        #                 <body>
+        #                 {html_with_twemoji}  <!-- or your email_content if not using Twemoji -->
+        #                 </body>
+        #                 </html> 
+        #             """
+                
+        options = {
+            "encoding": "UTF-8",
+            "enable-local-file-access": None,
+            "page-size": "A4",
+            "margin-top": "10mm",
+            "margin-right": "10mm",
+            "margin-bottom": "10mm",
+            "margin-left": "10mm",
+        }
+
+        exe = os.getenv("WKHTMLTOPDF_PATH", r"C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe")
+        config = pdfkit.configuration(wkhtmltopdf=exe) if os.path.exists(exe) else None
+
+        ok = pdfkit.from_string(full_html, pdf_path, options=options, configuration=config)
+        if not ok:
+            return Response({"ok": False, "error": "PDF generation failed"}, status=500)
+
+        rel = os.path.relpath(pdf_path, settings.MEDIA_ROOT)
+        return Response({"ok": True, "pdf_path": f"/media/{rel}"})
+
+
+# # views.py  (only the WeasyPrint view shown) ---------------------------------------------
+# class ConvertHtml2PDFWeasyView(APIView):
+#     permission_classes = [permissions.AllowAny]
+
+#     def post(self, request):
+#         # Ensure Windows loader finds MSYS2 DLLs
+#         if os.name == "nt":
+#             # allow override via env, else default to MSYS2 UCRT64
+#             dll_dir = os.getenv("WEASYPRINT_DLL_DIR", r"C:\msys64\ucrt64\bin")
+#             try:
+#                 os.add_dll_directory(dll_dir)
+#             except FileNotFoundError:
+#                 pass
+
+#         # Import AFTER adding DLL directory
+#         from weasyprint import HTML
+
+#         from .one1 import email_content
+
+#         reports_dir = os.path.join(settings.MEDIA_ROOT, "reports")
+#         os.makedirs(reports_dir, exist_ok=True)
+
+#         ts = datetime.now().strftime("%Y-%m-%d__%H-%M-%S")
+#         out_path = os.path.join(reports_dir, f"daily_report_weasy_{ts}.pdf")
+
+#         full_html = f"""<!doctype html>
+#                         <html>
+#                         <head>
+#                           <meta charset="utf-8">
+#                           <style>
+#                             html, body, table, td, span, h1, h2, h3, h4, h5, h6 {{
+#                               font-family: "Segoe UI Emoji","Noto Color Emoji","Apple Color Emoji","Segoe UI","Arial",sans-serif;
+#                             }}
+#                             table {{ border-collapse: collapse; }}
+#                           </style>
+#                         </head>
+#                         <body>
+#                         {email_content}
+#                         </body>
+#                         </html> 
+#                     """
+
+#         base_url = request.build_absolute_uri("/")
+#         HTML(string=full_html, base_url=base_url).write_pdf(target=out_path)
+
+#         rel = os.path.relpath(out_path, settings.MEDIA_ROOT)
+#         return Response({"ok": True, "pdf_path": f"/media/{rel}"})
