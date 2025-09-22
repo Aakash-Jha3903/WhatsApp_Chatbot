@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
 
     "django_extensions",
+    "drf_weasyprint",
     "rest_framework",
     
     "whatsapp_chat",
@@ -147,3 +148,15 @@ TWILIO_AUTH_TOKEN=os.getenv("TWILIO_AUTH_TOKEN")
 WHATSAPP_FROM=os.getenv("WHATSAPP_FROM")
 
 GEMINI_API_KEY=os.getenv("GOOGLE_API_KEY")
+
+MEDIA_URL = "/media/"
+MEDIA_ROOT = BASE_DIR / "media"
+
+# Optional: drf-weasyprint settings
+DRF_WEASYPRINT = {
+    # If you need custom fonts, you can point to a custom FontConfiguration class.
+    "DEFAULT_WEASYPRINT_FONT_CONFIG": "weasyprint.text.fonts.FontConfiguration",
+    "WEASYPRINT_LOG_PATH": None,   # or a path for troubleshooting logs
+    "DATA_CONTEXT_NAME": "data",   # template context var name (default = "data")
+}
+

@@ -26,3 +26,5 @@ Twilio setup : https://www.youtube.com/watch?v=UVez2UyjpFk
 Gemini API key : https://aistudio.google.com/apikey
 
 NGROK Links in Twilio : https://www.youtube.com/watch?v=dsJgse8gc2o
+
+(HTML+CSS) to PDF :  https://www.geeksforgeeks.org/python/python-convert-html-pdf/

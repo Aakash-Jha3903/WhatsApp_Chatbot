@@ -3,6 +3,15 @@
 import os
 import sys
 
+# # manage.py (very top, before other imports)
+# import os
+# if os.name == "nt":
+#     try:
+#         os.add_dll_directory(r"C:\msys64\ucrt64\bin")
+#     except FileNotFoundError:
+#         pass
+
+
 
 def main():
     """Run administrative tasks."""

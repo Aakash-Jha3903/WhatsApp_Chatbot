@@ -7,3 +7,7 @@ whatsapp_wsfu/
 *.sqlite3
 *.log
 .vscode/
+media/
+
+one1.py 
+chatmessages.csv

@@ -8,6 +8,15 @@ https://docs.djangoproject.com/en/5.2/howto/deployment/asgi/
 """
 
 import os
+# # wsgi.py / asgi.py (top of file, before other imports)
+# import os
+# if os.name == "nt":
+#     try:
+#         os.add_dll_directory(r"C:\msys64\ucrt64\bin")
+#     except FileNotFoundError:
+#         # MSYS2 not found; will fail later if WeasyPrint is used
+#         pass
+
 
 from django.core.asgi import get_asgi_application
 
