@@ -160,3 +160,9 @@ DRF_WEASYPRINT = {
     "DATA_CONTEXT_NAME": "data",   # template context var name (default = "data")
 }
 
+OPENAI_API_KEY=os.getenv("OPENAI_API_KEY")
+OPENAI_MODEL = "gpt-4o-mini"      # or any available chat model in your account
+OPENAI_TEMPERATURE = 0.2
+OPENAI_MAX_TOKENS = 512
+
+FORWARDING_DOMAIN=os.getenv("FORWARDING_DOMAIN") # your ngrok or other domain for webhook

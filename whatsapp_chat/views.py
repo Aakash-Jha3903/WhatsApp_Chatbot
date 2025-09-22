@@ -19,7 +19,9 @@ from twilio.rest import Client
 
 from .models import ChatMessage
 from .serializers import ChatMessageSerializer
-from .gemini_client import ask_gemini, MODEL_NAME, TEMPERATURE
+
+# from .gemini_client import ask_gemini, MODEL_NAME, TEMPERATURE
+from .openai_client import ask_openai, MODEL_NAME, TEMPERATURE
 
 
 
@@ -126,8 +128,10 @@ class WhatsAppWebhookView(APIView):
         except Exception:
             channel_metadata = {"raw": meta_raw}
 
-        # 1) Ask Gemini
-        reply_text, latency_ms = ask_gemini(user_text)
+        # # 1) Ask Gemini
+        # reply_text, latency_ms = ask_gemini(user_text)
+        # 1) Ask OpenAI
+        reply_text, latency_ms = ask_openai(user_text)
 
         # 2) Persist inbound + our response
         cm = ChatMessage.objects.create(
